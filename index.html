@@ -135,33 +135,35 @@
             <div class="screen-content centered">
                 <!-- Flip Card Container -->
                 <div class="flip-card" id="reveal-card">
-                    <!-- Front of Card (Tap to Reveal) -->
-                    <div class="flip-card-front">
-                        <div class="card-content">
-                            <h2 id="current-player-name" class="card-player-name">PLAYER 1</h2>
-                            <p class="card-instruction">Do not tell the word to other players.</p>
-                            <div class="tap-icon">👆</div>
-                            <p class="tap-text">TAP TO REVEAL</p>
-                        </div>
-                    </div>
-
-                    <!-- Back of Card (Revealed) -->
-                    <div class="flip-card-back">
-                        <!-- Regular Player View -->
-                        <div id="card-regular-reveal" class="card-content hidden">
-                            <p class="card-label">Your word is:</p>
-                            <h1 id="card-secret-word" class="card-word"></h1>
+                    <div class="flip-card-inner">
+                        <!-- Front of Card (Tap to Reveal) -->
+                        <div class="flip-card-front">
+                            <div class="card-content">
+                                <h2 id="current-player-name" class="card-player-name">PLAYER 1</h2>
+                                <p class="card-instruction">Do not tell the word to other players.</p>
+                                <div class="tap-icon">👆</div>
+                                <p class="tap-text">TAP TO REVEAL</p>
+                            </div>
                         </div>
 
-                        <!-- Imposter View -->
-                        <div id="card-imposter-reveal" class="card-content card-imposter hidden">
-                            <h2 class="card-imposter-text">YOU ARE THE<br>IMPOSTER!</h2>
-                            <p id="card-imposter-hint" class="card-hint hidden"></p>
+                        <!-- Back of Card (Revealed) -->
+                        <div class="flip-card-back">
+                            <!-- Regular Player View -->
+                            <div id="card-regular-reveal" class="card-content">
+                                <p class="card-label">Your word is:</p>
+                                <h1 id="card-secret-word" class="card-word"></h1>
+                            </div>
+
+                            <!-- Imposter View -->
+                            <div id="card-imposter-reveal" class="card-content card-imposter hidden">
+                                <h2 class="card-imposter-text">YOU ARE THE<br>IMPOSTER!</h2>
+                                <p id="card-imposter-hint" class="card-hint hidden"></p>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <button id="next-player-btn" class="btn btn-dark btn-large hidden" style="margin-top: 32px;">
+                <button id="next-player-btn" class="btn btn-dark btn-large" style="margin-top: 32px; max-width: 400px;">
                     ▶ NEXT PLAYER
                 </button>
             </div>

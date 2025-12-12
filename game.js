@@ -241,7 +241,7 @@ startGameBtn.addEventListener('click', () => {
     startNewRound();
 });
 
-// ===== SCREEN 4: WORD REVEAL FLOW (CARD FLIP) =====
+// ===== SCREEN 4: WORD REVEAL FLOW (SMOOTH CARD FLIP) =====
 const revealCard = document.getElementById('reveal-card');
 const currentPlayerName = document.getElementById('current-player-name');
 const cardRegularReveal = document.getElementById('card-regular-reveal');
@@ -251,6 +251,7 @@ const cardImposterHint = document.getElementById('card-imposter-hint');
 const nextPlayerBtn = document.getElementById('next-player-btn');
 
 let cardFlipped = false;
+let isTransitioning = false;
 
 function startNewRound() {
     // Reset state
@@ -268,25 +269,49 @@ function startNewRound() {
 
     // Start reveal flow
     showScreen('screen-reveal');
-    setupRevealCard();
+
+    // Small delay to ensure screen is visible before setting up card
+    setTimeout(() => {
+        setupRevealCard();
+    }, 100);
 }
 
 function setupRevealCard() {
     const currentPlayer = gameState.players[gameState.currentPlayerIndex];
 
-    // Reset card state
+    // First, reset card to front facing WITHOUT animation
     cardFlipped = false;
+    isTransitioning = false;
+
+    // Temporarily disable transition for instant reset
+    revealCard.style.transition = 'none';
     revealCard.classList.remove('flipped');
-    nextPlayerBtn.classList.add('hidden');
+
+    // Force reflow to apply the transition disable
+    void revealCard.offsetWidth;
+
+    // Re-enable transitions after a frame
+    requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+            revealCard.style.transition = '';
+        });
+    });
+
+    // Hide next button
+    nextPlayerBtn.classList.remove('visible');
 
     // Set player name
     currentPlayerName.textContent = currentPlayer.toUpperCase();
 
-    // Prepare reveal content (hidden until flip)
+    // Prepare reveal content - set it up BEFORE the flip happens
     const isImposter = gameState.imposters.includes(currentPlayer);
 
+    // Always hide both first
+    cardRegularReveal.classList.add('hidden');
+    cardImposterReveal.classList.add('hidden');
+
     if (isImposter) {
-        cardRegularReveal.classList.add('hidden');
+        // Show imposter view
         cardImposterReveal.classList.remove('hidden');
 
         if (gameState.hintsEnabled) {
@@ -297,37 +322,63 @@ function setupRevealCard() {
             cardImposterHint.classList.add('hidden');
         }
     } else {
+        // Show regular player view
         cardRegularReveal.classList.remove('hidden');
-        cardImposterReveal.classList.add('hidden');
         cardSecretWord.textContent = gameState.currentWord;
     }
 }
 
 function flipCard() {
-    if (!cardFlipped) {
+    if (!cardFlipped && !isTransitioning) {
         cardFlipped = true;
+        isTransitioning = true;
+
+        // Add flipped class for smooth animation
         revealCard.classList.add('flipped');
 
-        // Show next player button after flip animation
+        // Show next player button after flip animation completes
         setTimeout(() => {
-            nextPlayerBtn.classList.remove('hidden');
-        }, 600);
+            nextPlayerBtn.classList.add('visible');
+            isTransitioning = false;
+        }, 800); // Match the CSS transition duration
     }
+}
+
+function goToNextPlayer() {
+    if (isTransitioning) return;
+
+    isTransitioning = true;
+
+    // Fade out the button first
+    nextPlayerBtn.classList.remove('visible');
+
+    // Wait for button fade, then flip card back
+    setTimeout(() => {
+        gameState.currentPlayerIndex++;
+
+        if (gameState.currentPlayerIndex < gameState.players.length) {
+            // Set up next player's card
+            setupRevealCard();
+        } else {
+            // All players have seen their roles, go to discussion
+            startDiscussion();
+        }
+
+        isTransitioning = false;
+    }, 300);
 }
 
 // Tap to flip
 revealCard.addEventListener('click', flipCard);
 
-// Next player button
-nextPlayerBtn.addEventListener('click', () => {
-    gameState.currentPlayerIndex++;
-
-    if (gameState.currentPlayerIndex < gameState.players.length) {
-        setupRevealCard();
-    } else {
-        startDiscussion();
-    }
+// Also handle touch for better mobile experience
+revealCard.addEventListener('touchend', (e) => {
+    e.preventDefault();
+    flipCard();
 });
+
+// Next player button
+nextPlayerBtn.addEventListener('click', goToNextPlayer);
 
 // ===== SCREEN 5: DISCUSSION PHASE =====
 const timerDisplay = document.getElementById('timer-display');
