@@ -45,7 +45,6 @@ function renderPlayerList() {
         playerList.appendChild(playerItem);
     });
 
-    // Attach delete handlers
     document.querySelectorAll('.delete-player').forEach(btn => {
         btn.addEventListener('click', (e) => {
             const index = parseInt(e.target.dataset.index);
@@ -123,7 +122,6 @@ function renderCategories() {
         categoryGrid.appendChild(card);
     });
 
-    // Attach toggle handlers
     document.querySelectorAll('.category-card .toggle input').forEach(toggle => {
         toggle.addEventListener('change', (e) => {
             const category = e.target.dataset.category;
@@ -138,7 +136,6 @@ function renderCategories() {
         });
     });
 
-    // Attach preview handlers
     document.querySelectorAll('.preview-link').forEach(link => {
         link.addEventListener('click', (e) => {
             e.preventDefault();
@@ -153,7 +150,6 @@ function renderCategories() {
 function updateCategorySelection() {
     confirmCategoriesBtn.disabled = gameState.selectedCategories.length === 0;
 
-    // Update card styles
     document.querySelectorAll('.category-card').forEach(card => {
         const toggle = card.querySelector('input[type="checkbox"]');
         if (toggle.checked) {
@@ -241,7 +237,7 @@ startGameBtn.addEventListener('click', () => {
     startNewRound();
 });
 
-// ===== SCREEN 4: WORD REVEAL FLOW (SMOOTH CARD FLIP) =====
+// ===== SCREEN 4: HOLD TO REVEAL CARD =====
 const revealCard = document.getElementById('reveal-card');
 const currentPlayerName = document.getElementById('current-player-name');
 const cardRegularReveal = document.getElementById('card-regular-reveal');
@@ -250,27 +246,22 @@ const cardSecretWord = document.getElementById('card-secret-word');
 const cardImposterHint = document.getElementById('card-imposter-hint');
 const nextPlayerBtn = document.getElementById('next-player-btn');
 
-let cardFlipped = false;
-let isTransitioning = false;
+let isHolding = false;
+let hasRevealed = false;
 
 function startNewRound() {
-    // Reset state
     gameState.currentPlayerIndex = 0;
     gameState.votes = {};
 
-    // Select random word
     const wordData = getRandomWord(gameState.selectedCategories);
     gameState.currentWord = wordData.word;
     gameState.currentCategory = wordData.category;
 
-    // Assign imposters randomly
     const shuffledPlayers = [...gameState.players].sort(() => Math.random() - 0.5);
     gameState.imposters = shuffledPlayers.slice(0, gameState.imposterCount);
 
-    // Start reveal flow
     showScreen('screen-reveal');
 
-    // Small delay to ensure screen is visible before setting up card
     setTimeout(() => {
         setupRevealCard();
     }, 100);
@@ -279,39 +270,28 @@ function startNewRound() {
 function setupRevealCard() {
     const currentPlayer = gameState.players[gameState.currentPlayerIndex];
 
-    // First, reset card to front facing WITHOUT animation
-    cardFlipped = false;
-    isTransitioning = false;
+    // Reset state
+    isHolding = false;
+    hasRevealed = false;
 
-    // Temporarily disable transition for instant reset
-    revealCard.style.transition = 'none';
+    // Ensure card is NOT flipped (front facing)
     revealCard.classList.remove('flipped');
 
-    // Force reflow to apply the transition disable
-    void revealCard.offsetWidth;
-
-    // Re-enable transitions after a frame
-    requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-            revealCard.style.transition = '';
-        });
-    });
-
-    // Hide next button
+    // Hide next button until they've seen their role
     nextPlayerBtn.classList.remove('visible');
+    nextPlayerBtn.classList.add('hidden');
 
-    // Set player name
+    // Set player name on front
     currentPlayerName.textContent = currentPlayer.toUpperCase();
 
-    // Prepare reveal content - set it up BEFORE the flip happens
+    // Prepare the back content (hidden until hold)
     const isImposter = gameState.imposters.includes(currentPlayer);
 
-    // Always hide both first
+    // Hide both views first
     cardRegularReveal.classList.add('hidden');
     cardImposterReveal.classList.add('hidden');
 
     if (isImposter) {
-        // Show imposter view
         cardImposterReveal.classList.remove('hidden');
 
         if (gameState.hintsEnabled) {
@@ -322,63 +302,58 @@ function setupRevealCard() {
             cardImposterHint.classList.add('hidden');
         }
     } else {
-        // Show regular player view
         cardRegularReveal.classList.remove('hidden');
         cardSecretWord.textContent = gameState.currentWord;
     }
 }
 
-function flipCard() {
-    if (!cardFlipped && !isTransitioning) {
-        cardFlipped = true;
-        isTransitioning = true;
-
-        // Add flipped class for smooth animation
+// HOLD to reveal - flip card while holding
+function startHold(e) {
+    e.preventDefault();
+    if (!isHolding) {
+        isHolding = true;
+        hasRevealed = true;
         revealCard.classList.add('flipped');
-
-        // Show next player button after flip animation completes
-        setTimeout(() => {
-            nextPlayerBtn.classList.add('visible');
-            isTransitioning = false;
-        }, 800); // Match the CSS transition duration
     }
 }
 
-function goToNextPlayer() {
-    if (isTransitioning) return;
+// RELEASE to hide - flip back when released
+function endHold(e) {
+    e.preventDefault();
+    if (isHolding) {
+        isHolding = false;
+        revealCard.classList.remove('flipped');
 
-    isTransitioning = true;
-
-    // Fade out the button first
-    nextPlayerBtn.classList.remove('visible');
-
-    // Wait for button fade, then flip card back
-    setTimeout(() => {
-        gameState.currentPlayerIndex++;
-
-        if (gameState.currentPlayerIndex < gameState.players.length) {
-            // Set up next player's card
-            setupRevealCard();
-        } else {
-            // All players have seen their roles, go to discussion
-            startDiscussion();
+        // Show next player button after first reveal
+        if (hasRevealed) {
+            setTimeout(() => {
+                nextPlayerBtn.classList.remove('hidden');
+                nextPlayerBtn.classList.add('visible');
+            }, 400);
         }
-
-        isTransitioning = false;
-    }, 300);
+    }
 }
 
-// Tap to flip
-revealCard.addEventListener('click', flipCard);
+// Touch events
+revealCard.addEventListener('touchstart', startHold, { passive: false });
+revealCard.addEventListener('touchend', endHold, { passive: false });
+revealCard.addEventListener('touchcancel', endHold, { passive: false });
 
-// Also handle touch for better mobile experience
-revealCard.addEventListener('touchend', (e) => {
-    e.preventDefault();
-    flipCard();
-});
+// Mouse events (for desktop testing)
+revealCard.addEventListener('mousedown', startHold);
+revealCard.addEventListener('mouseup', endHold);
+revealCard.addEventListener('mouseleave', endHold);
 
 // Next player button
-nextPlayerBtn.addEventListener('click', goToNextPlayer);
+nextPlayerBtn.addEventListener('click', () => {
+    gameState.currentPlayerIndex++;
+
+    if (gameState.currentPlayerIndex < gameState.players.length) {
+        setupRevealCard();
+    } else {
+        startDiscussion();
+    }
+});
 
 // ===== SCREEN 5: DISCUSSION PHASE =====
 const timerDisplay = document.getElementById('timer-display');
@@ -401,7 +376,7 @@ function startDiscussion() {
 
 function startTimer(seconds) {
     let remaining = seconds;
-    const circumference = 2 * Math.PI * 90; // radius = 90
+    const circumference = 2 * Math.PI * 90;
 
     updateTimerDisplay(remaining, seconds, circumference);
 
@@ -411,7 +386,6 @@ function startTimer(seconds) {
 
         if (remaining <= 0) {
             clearInterval(timerInterval);
-            // Auto-proceed to voting after timer ends
         }
     }, 1000);
 }
@@ -424,7 +398,6 @@ function updateTimerDisplay(remaining, total, circumference) {
     const offset = circumference - (remaining / total) * circumference;
     timerProgress.style.strokeDashoffset = offset;
 
-    // Color changes
     if (remaining <= 10) {
         timerProgress.classList.add('danger');
         timerProgress.classList.remove('warning');
@@ -477,13 +450,8 @@ function renderVotingList() {
 }
 
 function voteForPlayer(player) {
-    // Simple voting - each player gets one vote (for demo, we'll collect all votes at once)
-    // In real game, you'd pass device like reveal phase
-
-    // For simplicity, we'll use click-based voting
     const voterId = `vote_${Date.now()}_${Math.random()}`;
     gameState.votes[voterId] = player;
-
     renderVotingList();
 }
 
@@ -508,7 +476,6 @@ const playAgainBtn = document.getElementById('play-again');
 const mainMenuBtn = document.getElementById('main-menu');
 
 function calculateResults() {
-    // Count votes
     const voteCounts = {};
     gameState.players.forEach(player => {
         voteCounts[player] = 0;
@@ -518,7 +485,6 @@ function calculateResults() {
         voteCounts[votedPlayer]++;
     });
 
-    // Find player with most votes
     let maxVotes = 0;
     let eliminatedPlayer = null;
 
@@ -529,19 +495,16 @@ function calculateResults() {
         }
     });
 
-    // Check if eliminated player is an imposter
     const wasImposter = gameState.imposters.includes(eliminatedPlayer);
 
     showScreen('screen-results');
 
     if (wasImposter) {
-        // Victory
         victoryView.classList.remove('hidden');
         defeatView.classList.add('hidden');
         caughtPlayerEl.textContent = `${eliminatedPlayer} was the imposter!`;
         revealedWordVictory.textContent = gameState.currentWord;
     } else {
-        // Defeat
         victoryView.classList.add('hidden');
         defeatView.classList.remove('hidden');
         const imposterNames = gameState.imposters.join(' and ');
@@ -555,7 +518,6 @@ playAgainBtn.addEventListener('click', () => {
 });
 
 mainMenuBtn.addEventListener('click', () => {
-    // Reset everything
     gameState = {
         players: [],
         selectedCategories: [],
