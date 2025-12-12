@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Sus Circle - Party Game</title>
+
+    <!-- iOS Web App Meta Tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Sus Circle">
+
+    <!-- App Icons -->
+    <link rel="apple-touch-icon" href="icon.jpg">
+    <link rel="icon" type="image/jpeg" href="icon.jpg">
+
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <div id="app">
+        <!-- Screen 1: Add Players -->
+        <div id="screen-add-players" class="screen active">
+            <div class="screen-header">
+                <h1 class="title">Who's Playing? 👥</h1>
+            </div>
+
+            <div class="screen-content">
+                <div class="input-group">
+                    <input type="text" id="player-name-input" placeholder="Enter player name..." maxlength="20">
+                    <button id="add-player-btn" class="btn btn-primary">Add Player</button>
+                </div>
+
+                <div id="player-list" class="player-list"></div>
+
+                <div class="player-count">
+                    <span id="player-count-text">0 players</span>
+                    <span class="hint">Minimum 3 players required</span>
+                </div>
+            </div>
+
+            <div class="screen-footer">
+                <button id="continue-to-categories" class="btn btn-success btn-large" disabled>Continue</button>
+            </div>
+        </div>
+
+        <!-- Screen 2: Category Selection -->
+        <div id="screen-categories" class="screen">
+            <div class="screen-header">
+                <h1 class="title">Choose Categories 🎯</h1>
+                <p class="subtitle">Pick one or more word packs</p>
+            </div>
+
+            <div class="screen-content">
+                <div id="category-grid" class="category-grid"></div>
+            </div>
+
+            <div class="screen-footer">
+                <button id="confirm-categories" class="btn btn-success btn-large" disabled>Confirm Categories</button>
+            </div>
+        </div>
+
+        <!-- Screen 3: Game Setup -->
+        <div id="screen-setup" class="screen">
+            <div class="screen-header">
+                <h1 class="title">Game Settings ⚙️</h1>
+            </div>
+
+            <div class="screen-content">
+                <div class="settings-card">
+                    <h3>Number of Imposters 🕵️</h3>
+                    <div class="radio-group">
+                        <label class="radio-option">
+                            <input type="radio" name="imposter-count" value="1" checked>
+                            <span class="radio-label">
+                                <strong>1 Imposter</strong>
+                                <small>Recommended for 3-6 players</small>
+                            </span>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="imposter-count" value="2">
+                            <span class="radio-label">
+                                <strong>2 Imposters</strong>
+                                <small>Recommended for 7+ players</small>
+                            </span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="settings-card">
+                    <div class="setting-header">
+                        <h3>Time Limit ⏱️</h3>
+                        <label class="toggle">
+                            <input type="checkbox" id="time-limit-toggle">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    <div id="time-picker" class="time-picker hidden">
+                        <select id="time-select">
+                            <option value="30">30 seconds</option>
+                            <option value="60" selected>1 minute</option>
+                            <option value="90">1:30 minutes</option>
+                            <option value="120">2 minutes</option>
+                            <option value="150">2:30 minutes</option>
+                            <option value="180">3 minutes</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="settings-card">
+                    <div class="setting-header">
+                        <h3>Imposter Hint 💡</h3>
+                        <label class="toggle">
+                            <input type="checkbox" id="hints-toggle">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    <p class="setting-info">Imposters get a vague category hint</p>
+                </div>
+            </div>
+
+            <div class="screen-footer">
+                <button id="start-game" class="btn btn-success btn-large">Start Game</button>
+            </div>
+        </div>
+
+        <!-- Screen 4: Word Reveal Flow -->
+        <div id="screen-reveal" class="screen">
+            <div class="screen-content centered">
+                <!-- Flip Card Container -->
+                <div class="flip-card" id="reveal-card">
+                    <!-- Front of Card (Tap to Reveal) -->
+                    <div class="flip-card-front">
+                        <div class="card-content">
+                            <h2 id="current-player-name" class="card-player-name">PLAYER 1</h2>
+                            <p class="card-instruction">Do not tell the word to other players.</p>
+                            <div class="tap-icon">👆</div>
+                            <p class="tap-text">TAP TO REVEAL</p>
+                        </div>
+                    </div>
+
+                    <!-- Back of Card (Revealed) -->
+                    <div class="flip-card-back">
+                        <!-- Regular Player View -->
+                        <div id="card-regular-reveal" class="card-content hidden">
+                            <p class="card-label">Your word is:</p>
+                            <h1 id="card-secret-word" class="card-word"></h1>
+                        </div>
+
+                        <!-- Imposter View -->
+                        <div id="card-imposter-reveal" class="card-content card-imposter hidden">
+                            <h2 class="card-imposter-text">YOU ARE THE<br>IMPOSTER!</h2>
+                            <p id="card-imposter-hint" class="card-hint hidden"></p>
+                        </div>
+                    </div>
+                </div>
+
+                <button id="next-player-btn" class="btn btn-dark btn-large hidden" style="margin-top: 32px;">
+                    ▶ NEXT PLAYER
+                </button>
+            </div>
+        </div>
+
+        <!-- Screen 5: Discussion Phase -->
+        <div id="screen-discussion" class="screen">
+            <div class="screen-header">
+                <h1 class="title">Find the Imposter! 🕵️</h1>
+            </div>
+
+            <div class="screen-content centered">
+                <div id="timer-display" class="timer-circle hidden">
+                    <svg class="timer-svg" viewBox="0 0 200 200">
+                        <circle class="timer-bg" cx="100" cy="100" r="90"></circle>
+                        <circle id="timer-progress" class="timer-progress" cx="100" cy="100" r="90"></circle>
+                    </svg>
+                    <div class="timer-text">
+                        <span id="timer-value">0:00</span>
+                    </div>
+                </div>
+                <p class="subtitle">Discuss what you know...</p>
+            </div>
+
+            <div class="screen-footer">
+                <button id="vote-now" class="btn btn-success btn-large">Vote Now</button>
+            </div>
+        </div>
+
+        <!-- Screen 6: Voting -->
+        <div id="screen-voting" class="screen">
+            <div class="screen-header">
+                <h1 class="title">Who's the Imposter? 🗳️</h1>
+                <p class="subtitle"><span id="votes-collected">0</span> / <span id="total-votes">0</span> votes</p>
+            </div>
+
+            <div class="screen-content">
+                <div id="voting-list" class="voting-list"></div>
+            </div>
+
+            <div class="screen-footer">
+                <button id="confirm-votes" class="btn btn-success btn-large" disabled>Confirm Votes</button>
+            </div>
+        </div>
+
+        <!-- Screen 7: Results -->
+        <div id="screen-results" class="screen">
+            <div id="victory-view" class="results-view hidden">
+                <div class="screen-content centered">
+                    <div class="confetti"></div>
+                    <h1 class="results-title">🎉 Imposter Caught!</h1>
+                    <p id="caught-player" class="results-subtitle"></p>
+                    <div class="word-reveal-box">
+                        <p class="reveal-label">The secret word was:</p>
+                        <h2 id="revealed-word-victory" class="revealed-word"></h2>
+                    </div>
+                </div>
+            </div>
+
+            <div id="defeat-view" class="results-view hidden">
+                <div class="screen-content centered imposter-bg">
+                    <h1 class="results-title">😈 Imposter Wins!</h1>
+                    <p id="winner-player" class="results-subtitle"></p>
+                    <div class="word-reveal-box">
+                        <p class="reveal-label">The secret word was:</p>
+                        <h2 id="revealed-word-defeat" class="revealed-word"></h2>
+                    </div>
+                </div>
+            </div>
+
+            <div class="screen-footer">
+                <button id="play-again" class="btn btn-primary btn-large">Play Again</button>
+                <button id="main-menu" class="btn btn-secondary btn-large">Main Menu</button>
+            </div>
+        </div>
+
+        <!-- Category Preview Modal -->
+        <div id="category-modal" class="modal hidden">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 id="modal-category-name"></h2>
+                    <button id="close-modal" class="close-btn">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <ul id="modal-word-list" class="word-preview-list"></ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="words.js"></script>
+    <script src="game.js"></script>
+</body>
+
+</html>
